@@ -3,32 +3,48 @@ import express from 'express';
 import dotenv from 'dotenv';
 import swaggerUi from 'swagger-ui-express';
 import YAML from 'yamljs';
-import { errorHandler } from './middleware/errorHandler.js';
+import mongoose from 'mongoose';
+import cors from 'cors';
 
-// Cargar variables de entorno desde .env
+import { errorHandler } from './middleware/errorHandler.js';
+import authRoutes from './routes/authRoutes.js'; // Asegúrate de tener estas rutas creadas
+
+// Cargar variables de entorno
 dotenv.config();
 
 // Inicializar app
 const app = express();
 
-// Middleware para parsear JSON
+// Conexión a MongoDB
+mongoose.connect(process.env.MONGO_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+})
+.then(() => console.log('✅ Conectado a MongoDB'))
+.catch((err) => console.error('❌ Error conectando a MongoDB:', err.message));
+
+// Middleware
+app.use(cors());
 app.use(express.json());
 
 // Documentación Swagger
 const swaggerDoc = YAML.load('./swagger.yaml');
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDoc));
 
+// Rutas principales
+app.use('/api/auth', authRoutes);
+
 // Ruta raíz (test)
 app.get('/', (req, res) => res.send('✅ API funcionando 🔐'));
 
-// Ejemplo de ruta con error (opcional para pruebas)
+// Ruta de error para pruebas
 app.get('/error-test', (req, res, next) => {
   const error = new Error('Este es un error de prueba');
   error.status = 418;
-  next(error); // Se envía al middleware de errores
+  next(error);
 });
 
-// Middleware global de errores (debe ir al final)
+// Middleware global de errores
 app.use(errorHandler);
 
 // Iniciar servidor
