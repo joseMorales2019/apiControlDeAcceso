@@ -1,19 +1,38 @@
 import jwt from 'jsonwebtoken';
 
 export const verifyToken = (req, res, next) => {
-  const token = req.headers['authorization']?.split(' ')[1];
-  if (!token) return res.status(401).json({ message: 'Token requerido' });
-
   try {
+    const authHeader = req.headers['authorization'];
+    if (!authHeader) {
+      console.error('🔐 Error: Cabecera Authorization no encontrada');
+      return res.status(401).json({ message: 'Cabecera Authorization requerida' });
+    }
+
+    const token = authHeader.split(' ')[1];
+    if (!token) {
+      console.error('🔐 Error: Token no presente en la cabecera Authorization');
+      return res.status(401).json({ message: 'Token requerido' });
+    }
+
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     req.user = decoded;
     next();
-  } catch {
-    res.status(401).json({ message: 'Token inválido o expirado' });
+  } catch (error) {
+    console.error('🔐 Error al verificar token:', error.message);
+    res.status(401).json({ message: 'Token inválido o expirado', error: error.message });
   }
 };
 
 export const isAdmin = (req, res, next) => {
-  if (req.user?.rol === 'admin') return next();
-  return res.status(403).json({ message: 'Acceso denegado' });
+  try {
+    if (req.user?.rol === 'admin') {
+      return next();
+    } else {
+      console.warn('⛔ Acceso denegado: el rol del usuario no es admin');
+      return res.status(403).json({ message: 'Acceso denegado: Se requiere rol de administrador' });
+    }
+  } catch (error) {
+    console.error('⛔ Error al verificar rol del usuario:', error.message);
+    res.status(500).json({ message: 'Error interno al verificar el rol', error: error.message });
+  }
 };
