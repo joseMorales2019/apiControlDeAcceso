@@ -8,6 +8,10 @@ import cors from 'cors';
 
 import { errorHandler } from './middleware/errorHandler.js';
 import authRoutes from './routes/authRoutes.js'; // Asegúrate de tener estas rutas creadas
+import connectDB from './config/db.js';
+connectDB(); // Llamar antes de app.listen()
+
+
 
 // Cargar variables de entorno
 dotenv.config();
