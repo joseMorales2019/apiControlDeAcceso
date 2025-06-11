@@ -35,7 +35,7 @@ app.use(express.json());
 const swaggerDoc = YAML.load('./swagger.yaml');
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDoc));
 
-// Rutas principales
+// Ruta principal
 app.use('/api/auth', authRoutes);
 
 // Ruta raíz (test)
