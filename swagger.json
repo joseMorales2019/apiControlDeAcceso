@@ -1,0 +1,230 @@
+openapi: 3.0.4
+info:
+  title: API Control de Acceso- por Jose Morales
+  description: |
+    Esta API permite gestionar el control de acceso de usuarios, autenticación mediante JWT, roles y permisos,
+    así como la importación de usuarios desde archivos Excel. Desarrollada con Node.js, Express y MongoDB Atlas.
+
+  version: 1.0.0
+ 
+ 
+servers:
+  - url: https://control-acceso.onrender.com/api
+
+tags:
+  - name: auth
+    description: Endpoints de autenticación
+  - name: admin
+    description: Endpoints administrativos (requiere rol ADMIN)
+
+paths:
+  /auth/register:
+    post:
+      tags:
+        - auth
+      summary: Registro de nuevo usuario
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                nombre:
+                  type: string
+                email:
+                  type: string
+                documento:
+                  type: string
+                password:
+                  type: string
+              required: [nombre, email, documento, password]
+      responses:
+        '201':
+          description: Usuario registrado correctamente
+        '400':
+          description: Documento ya en uso
+
+  /auth/login:
+    post:
+      tags:
+        - auth
+      summary: Inicio de sesión
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                documento:
+                  type: string
+                password:
+                  type: string
+              required: [documento, password]
+      responses:
+        '200':
+          description: Autenticación exitosa
+        '401':
+          description: Credenciales incorrectas
+
+  /auth/profile:
+    get:
+      tags:
+        - auth
+      summary: Obtener información del usuario autenticado
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Información del perfil
+        '401':
+          description: Token no válido
+
+  /auth/logout:
+    post:
+      tags:
+        - auth
+      summary: Cierre de sesión
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Sesión cerrada
+
+  /auth/refresh:
+    post:
+      tags:
+        - auth
+      summary: Refrescar token JWT
+      responses:
+        '200':
+          description: Nuevo token generado
+
+  /auth/forgot:
+    post:
+      tags:
+        - auth
+      summary: Solicitar recuperación de contraseña
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+              required: [email]
+      responses:
+        '200':
+          description: Enlace de recuperación enviado
+
+  /auth/reset:
+    post:
+      tags:
+        - auth
+      summary: Establecer nueva contraseña
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                token:
+                  type: string
+                nuevaPassword:
+                  type: string
+              required: [token, nuevaPassword]
+      responses:
+        '200':
+          description: Contraseña actualizada
+
+  /admin/users:
+    get:
+      tags:
+        - admin
+      summary: Obtener lista de usuarios
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Lista de usuarios
+        '403':
+          description: Acceso denegado
+
+  /admin/user/{id}:
+    put:
+      tags:
+        - admin
+      summary: Actualizar usuario
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                nombre:
+                  type: string
+                rol:
+                  type: string
+              required: [nombre, rol]
+      responses:
+        '200':
+          description: Usuario actualizado
+
+    delete:
+      tags:
+        - admin
+      summary: Eliminar usuario
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Usuario eliminado
+
+  /admin/upload-excel:
+    post:
+      tags:
+        - admin
+      summary: Importar usuarios desde archivo Excel
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: Usuarios importados correctamente
+        '400':
+          description: Error en archivo
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
