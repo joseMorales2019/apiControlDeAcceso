@@ -37,12 +37,29 @@ export const login = async (req, res) => {
     // if (!user || !(await bcrypt.compare(password, user.password))) {
     //   return res.status(400).json({ message: 'Credenciales inválidas' });
     // }
+//inicio a este punto si funciono
+// if (!user || password !== user.password) {
+//   return res.status(400).json({ 
+//     message: 'Credenciales inválidas',
+//     inputPassword: password,
+//     storedPassword: user ? user.password : null
+//   });
+// }
 
-if (!user || password !== user.password) {
+// // En caso favorable (credenciales válidas), puedes registrar los datos exitosos
+// console.log('🟢 Acceso concedido', {
+//   email: user.email,
+//   inputPassword: password,
+//   storedPassword: user.password
+// });
+//fin
+
+
+if (!user || !(await bcrypt.compare(password, user.password))) {
   return res.status(400).json({ 
     message: 'Credenciales inválidas',
     inputPassword: password,
-    storedPassword: user ? user.password : null
+    storedHashedPassword: user ? user.password : null
   });
 }
 
@@ -50,8 +67,9 @@ if (!user || password !== user.password) {
 console.log('🟢 Acceso concedido', {
   email: user.email,
   inputPassword: password,
-  storedPassword: user.password
+  storedHashedPassword: user.password
 });
+
 
 
 
