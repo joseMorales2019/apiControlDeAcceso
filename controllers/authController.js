@@ -96,6 +96,8 @@ export const getUsers = async (req, res) => {
   }
 };
 
+//FUNCIONA
+//https://apicontroldeacceso.onrender.com/api/auth/users?email=jose@example.com
 // 🧑‍🔧 Actualizar un usuario (solo admin)
 export const updateUser = async (req, res) => {
   try {

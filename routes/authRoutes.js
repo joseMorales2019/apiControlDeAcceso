@@ -11,6 +11,11 @@ import {
   deleteManyUsers
 } from '../controllers/authController.js';
 
+import { importarUsuarios, upload } from '../controllers/excelController.js';
+
+
+
+
 import { verifyToken, isAdmin } from '../middleware/auth.js'; // ✅ Importación agregada
 
 const router = express.Router();
@@ -28,5 +33,8 @@ router.put('/users/:id', verifyToken, isAdmin, updateUser);
 router.put('/users', verifyToken, isAdmin, updateManyUsers);
 router.delete('/users/:id', verifyToken, isAdmin, deleteUser);
 router.delete('/users', verifyToken, isAdmin, deleteManyUsers);
+
+// PARA CREAR EDITAR ELIMINAR DESDE EXCEL
+router.post('/importar-usuarios', verifyToken, isAdmin, upload.single('file'), importarUsuarios);
 
 export default router;
