@@ -1,4 +1,10 @@
 // server.js
+import asignacionRoutes from './routes/asignacion.routes.js';
+
+
+
+
+
 import express from 'express';
 import dotenv from 'dotenv';
 import swaggerUi from 'swagger-ui-express';
@@ -26,6 +32,9 @@ mongoose.connect(process.env.MONGO_URI, {
 })
 .then(() => console.log('✅ API Conectado a MongoDB'))
 .catch((err) => console.error('❌ Error API conectando a MongoDB:', err.message));
+
+
+app.use('/api/asignacion', asignacionRoutes);
 
 // Middleware
 app.use(cors());

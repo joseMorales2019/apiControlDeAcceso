@@ -28,7 +28,8 @@ const userSchema = new mongoose.Schema({
     type: String,
     enum: ['admin', 'usuario'],
     default: 'usuario'
-  }
+  },
+   formulariosAsignados: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Formulario' }]
 }, {
   timestamps: true
 });
