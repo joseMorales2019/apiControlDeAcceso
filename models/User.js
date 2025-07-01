@@ -1,5 +1,16 @@
-// models/User.js
 import mongoose from 'mongoose';
+
+const formularioAsignadoSchema = new mongoose.Schema({
+  formularioId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Formulario',
+    required: true
+  },
+  visible: {
+    type: Boolean,
+    default: true
+  }
+}, { _id: false });
 
 const userSchema = new mongoose.Schema({
   nombre: {
@@ -29,9 +40,9 @@ const userSchema = new mongoose.Schema({
     enum: ['admin', 'usuario'],
     default: 'usuario'
   },
-   formulariosAsignados: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Formulario' }]
+  formulariosAsignados: [formularioAsignadoSchema]
 }, {
   timestamps: true
 });
 
-export default mongoose.model('user', userSchema);
+export default mongoose.model('User', userSchema); // Asegúrate de usar U mayúscula
