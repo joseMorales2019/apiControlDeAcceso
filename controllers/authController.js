@@ -74,9 +74,7 @@ export const profile = async (req, res) => {
   }
 };
 
-
-
-// 🔍 Obtener y filtrar usuarios (solo admin)
+// Obtener y filtrar usuarios (solo admin)
 export const getUsers = async (req, res) => {
   try {
     if (req.user.rol !== 'admin') {
@@ -85,8 +83,6 @@ export const getUsers = async (req, res) => {
 
     const filters = {};
     if (req.query.email) filters.email = req.query.email;
-    // if (req.query.documento) filters.documento = req.query.documento;
-    // if (req.query.rol) filters.rol = req.query.rol;
 
     const users = await User.find(filters).select('-password');
     res.json(users);
@@ -96,9 +92,7 @@ export const getUsers = async (req, res) => {
   }
 };
 
-//FUNCIONA
-//https://apicontroldeacceso.onrender.com/api/auth/users?email=jose@example.com
-// 🧑‍🔧 Actualizar un usuario (solo admin)
+// Actualizar un usuario (solo admin)
 export const updateUser = async (req, res) => {
   try {
     if (req.user.rol !== 'admin') {
@@ -120,7 +114,7 @@ export const updateUser = async (req, res) => {
   }
 };
 
-// 🧑‍🔧 Actualizar múltiples usuarios (solo admin)
+// Actualizar múltiples usuarios (solo admin)
 export const updateManyUsers = async (req, res) => {
   try {
     if (req.user.rol !== 'admin') {
@@ -146,7 +140,7 @@ export const updateManyUsers = async (req, res) => {
   }
 };
 
-// ❌ Eliminar un usuario (solo admin)
+// Eliminar un usuario (solo admin)
 export const deleteUser = async (req, res) => {
   try {
     if (req.user.rol !== 'admin') {
@@ -163,7 +157,7 @@ export const deleteUser = async (req, res) => {
   }
 };
 
-// ❌ Eliminar múltiples usuarios (solo admin)
+// Eliminar múltiples usuarios (solo admin)
 export const deleteManyUsers = async (req, res) => {
   try {
     if (req.user.rol !== 'admin') {
@@ -176,5 +170,29 @@ export const deleteManyUsers = async (req, res) => {
   } catch (error) {
     console.error('❌  En el backend se registro Error al eliminar múltiples usuarios:', error.message);
     res.status(500).json({ message: ' En el backend se registro Error al eliminar usuarios', error: error.message });
+  }
+};
+
+// ✅ NUEVA FUNCIÓN: Actualizar formularios asignados a un usuario
+export const actualizarFormulariosAsignados = async (req, res) => {
+  const userId = req.params.id;
+  const { formulariosAsignados } = req.body;
+
+  try {
+    const usuario = await User.findByIdAndUpdate(
+      userId,
+      { formulariosAsignados },
+      { new: true }
+    ).select('-password');
+
+    if (!usuario) return res.status(404).json({ mensaje: 'Usuario no encontrado' });
+
+    res.json({
+      mensaje: '✅ Formularios asignados actualizados con éxito',
+      usuario
+    });
+  } catch (err) {
+    console.error('❌ Error al actualizar formularios asignados:', err.message);
+    res.status(500).json({ mensaje: 'Error al actualizar formularios asignados' });
   }
 };
