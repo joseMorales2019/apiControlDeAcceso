@@ -9,6 +9,15 @@ const formularioAsignadoSchema = new mongoose.Schema({
   visible: {
     type: Boolean,
     default: true
+  },
+  respuestas: {
+    type: [ // Cada campo con su etiqueta y respuesta
+      {
+        etiqueta: String,
+        respuesta: mongoose.Schema.Types.Mixed
+      }
+    ],
+    default: []
   }
 }, { _id: false });
 
