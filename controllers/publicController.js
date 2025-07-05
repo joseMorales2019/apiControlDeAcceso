@@ -1,5 +1,9 @@
 import mongoose from 'mongoose';
 import User from '../models/User.js';
+import mongoose from 'mongoose';
+import User from '../models/User.js';
+import bcrypt from 'bcrypt'; // ✅ <--- ¡Esta es la clave!
+import jwt from 'jsonwebtoken';
 
 
 export const crearTenantYAdmin = async (req, res) => {
