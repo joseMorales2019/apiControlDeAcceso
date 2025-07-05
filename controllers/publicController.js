@@ -1,27 +1,26 @@
-// controllers/publicController.js
-import User from '../models/User.js';
-import bcrypt from 'bcrypt';
-import jwt from 'jsonwebtoken';
 import mongoose from 'mongoose';
 
 export const crearTenantYAdmin = async (req, res) => {
   try {
-    const { tenantId, nombre, email, documento, password } = req.body;
+    const { nombre, email, documento, password } = req.body;
 
-    if (!tenantId || !email || !password || !documento || !nombre) {
+    if (!nombre || !email || !documento || !password) {
       return res.status(400).json({ message: 'Campos obligatorios faltantes' });
     }
 
-    // Verificar si ya existen usuarios para ese tenant
-    const existeAdmin = await User.findOne({ tenantId });
+    // ✅ Generar nuevo tenantId (ObjectId válido)
+    const tenantId = new mongoose.Types.ObjectId();
+
+    // Verificar si ya existe un admin con ese correo en todo el sistema
+    const existeAdmin = await User.findOne({ email, documento });
     if (existeAdmin) {
-      return res.status(400).json({ message: 'Este tenant ya tiene un administrador registrado' });
+      return res.status(400).json({ message: 'Ya existe un usuario con este correo o documento' });
     }
 
     const hashed = await bcrypt.hash(password, 10);
 
     const nuevo = await User.create({
-      tenantId: new mongoose.Types.ObjectId(tenantId), // o solo tenantId si no usas como ObjectId
+      tenantId,
       nombre,
       email,
       documento,
@@ -37,8 +36,10 @@ export const crearTenantYAdmin = async (req, res) => {
 
     res.status(201).json({
       mensaje: '✅ Tenant y primer admin creados con éxito',
-      token
+      token,
+      tenantId: tenantId.toString() // para que el frontend lo guarde
     });
+
   } catch (error) {
     console.error('❌ Error al crear tenant y admin:', error.message);
     res.status(500).json({ message: 'Error interno', error: error.message });
