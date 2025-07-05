@@ -10,6 +10,8 @@ import YAML from 'yamljs';
 import crearTenantRouter from './routes/public.js';
 
 
+const tenantRoutes = require('./routes/tenant.routes');
+
 // 🛠️ Middlewares y configuración
 import { errorHandler } from './middleware/errorHandler.js';
 import connectDB from './config/db.js';
@@ -44,6 +46,7 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDoc));
 app.use('/api/public', crearTenantRouter);
 
 // 🚦 Rutas de la API
+app.use('/api/tenants', tenantRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/asignacion', asignacionRoutes); // Ruta protegida para asignaciones
 
