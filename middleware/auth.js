@@ -7,15 +7,18 @@ export const verifyToken = (req, res, next) => {
       console.error('🔐 Error: Cabecera Authorization no encontrada');
       return res.status(401).json({ message: 'Cabecera Authorization requerida' });
     }
-
     const token = authHeader.split(' ')[1];
     if (!token) {
       console.error('🔐 Error: Token no presente en la cabecera Authorization');
       return res.status(401).json({ message: 'Token requerido' });
     }
-
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = decoded;
+    // Verificar que tenantId esté presente en el token
+    if (!decoded.tenantId) {
+      console.warn('🔐 Token inválido: falta tenantId');
+      return res.status(401).json({ message: 'Token inválido: tenantId requerido' });
+    }
+    req.user = decoded; // id, rol, tenantId
     next();
   } catch (error) {
     console.error('🔐 Error al verificar token:', error.message);

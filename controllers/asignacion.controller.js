@@ -1,36 +1,26 @@
-import User from '../models/User.js';
-
 import mongoose from 'mongoose';
+import User from '../models/User.js';
+import Formulario from '../models/Formulario.js';
 
 export const asignarFormularioAUsuario = async (req, res) => {
   const { userId, formularioId, visible = true } = req.body;
 
-  if (!mongoose.Types.ObjectId.isValid(userId) || !mongoose.Types.ObjectId.isValid(formularioId)) {
-    return res.status(400).json({ error: 'ID de usuario o formulario inválido' });
+  if (!mongoose.isValidObjectId(userId) || !mongoose.isValidObjectId(formularioId)) {
+    return res.status(400).json({ error: 'ID inválido' });
   }
 
-  try {
-    const usuario = await User.findById(userId);
-    if (!usuario) {
-      return res.status(404).json({ error: 'Usuario no encontrado' });
-    }
+  const [usuario, formulario] = await Promise.all([
+    User.findOne({ _id: userId, tenantId: req.user.tenantId }),
+    Formulario.findOne({ _id: formularioId, tenantId: req.user.tenantId })
+  ]);
 
-    // Verifica si el formulario ya está asignado
-    const yaAsignado = usuario.formulariosAsignados.some(
-      (f) => f.formularioId.toString() === formularioId
-    );
+  if (!usuario) return res.status(404).json({ error: 'Usuario no encontrado' });
+  if (!formulario) return res.status(404).json({ error: 'Formulario no encontrado en esta organización' });
 
-    if (!yaAsignado) {
-      usuario.formulariosAsignados.push({ formularioId, visible });
-      await usuario.save();
-    }
-
-    res.json({ mensaje: '✅ Formulario asignado con éxito', usuario });
-  } catch (error) {
-    console.error('❌ Error al asignar formulario:', error);
-    res.status(500).json({
-      error: 'Error al asignar formulario',
-      detalle: error.message
-    });
+  if (!usuario.formulariosAsignados.some(f => f.formularioId.equals(formularioId))) {
+    usuario.formulariosAsignados.push({ formularioId, visible });
+    await usuario.save();
   }
+
+  res.json({ mensaje: '✅ Formulario asignado con éxito', usuario });
 };
