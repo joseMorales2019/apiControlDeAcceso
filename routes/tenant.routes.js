@@ -1,6 +1,10 @@
-const express = require('express');
+import express from 'express';
+import Tenant from '../models/Tenant.js';
 const router = express.Router();
-const Tenant = require('../models/Tenant');
+
+
+
+
 
 // GET ALL
 router.get('/', async (req, res) => {

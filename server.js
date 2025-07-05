@@ -8,9 +8,11 @@ import cors from 'cors';
 import swaggerUi from 'swagger-ui-express';
 import YAML from 'yamljs';
 import crearTenantRouter from './routes/public.js';
+import tenantRoutes from './routes/tenant.routes.js'; // ⬅️ OJO: debes agregar la extensión .js
 
 
-const tenantRoutes = require('./routes/tenant.routes');
+
+
 
 // 🛠️ Middlewares y configuración
 import { errorHandler } from './middleware/errorHandler.js';
@@ -49,6 +51,8 @@ app.use('/api/public', crearTenantRouter);
 app.use('/api/tenants', tenantRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/asignacion', asignacionRoutes); // Ruta protegida para asignaciones
+
+
 
 // 🏁 Ruta raíz (ping de estado)
 app.get('/', (req, res) => res.send('✅ API funcionando 🔐'));
