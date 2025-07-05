@@ -7,6 +7,8 @@ import mongoose from 'mongoose';
 import cors from 'cors';
 import swaggerUi from 'swagger-ui-express';
 import YAML from 'yamljs';
+import crearTenantRouter from './routes/public.js';
+
 
 // 🛠️ Middlewares y configuración
 import { errorHandler } from './middleware/errorHandler.js';
@@ -36,6 +38,10 @@ app.use(express.json());
 // 📚 Documentación Swagger
 const swaggerDoc = YAML.load('./swagger.yaml');
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDoc));
+
+
+// 🔓 Rutas públicas
+app.use('/api/public', crearTenantRouter);
 
 // 🚦 Rutas de la API
 app.use('/api/auth', authRoutes);
