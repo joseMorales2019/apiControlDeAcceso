@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 import User from '../models/User.js';
+import Formulario from '../models/Formulario.js';
 
 
 export const asignarFormularioAUsuario = async (req, res) => {
