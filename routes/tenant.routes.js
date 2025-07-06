@@ -1,5 +1,5 @@
 import express from 'express';
-import Tenant from '../models/Tenant.js';
+import Tenant from '../models/tenant.model.js';
 const router = express.Router();
 
 
