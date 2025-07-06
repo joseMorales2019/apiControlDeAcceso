@@ -1,5 +1,4 @@
-// tenant.model.js
-// tenant.model.js
+// 📄 tenant.model.js
 import mongoose from 'mongoose';
 
 const tenantSchema = new mongoose.Schema({
@@ -11,4 +10,6 @@ const tenantSchema = new mongoose.Schema({
   creadoEn: { type: Date, default: Date.now }
 });
 
-export const Tenant = mongoose.model('Tenant', tenantSchema);
+// ✅ Exportar como default
+const Tenant = mongoose.model('Tenant', tenantSchema);
+export default Tenant;
