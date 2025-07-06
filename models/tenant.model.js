@@ -1,5 +1,4 @@
 // 📄 tenant.model.js
-i// models/tenant.model.js
 import mongoose from 'mongoose';
 
 const tenantSchema = new mongoose.Schema({
