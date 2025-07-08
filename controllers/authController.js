@@ -2,9 +2,9 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
 
-
 const rolesValidos = ['admin', 'usuario', 'moderador'];
 
+// Elimina múltiples usuarios por array de documentos
 export const deleteManyUsers = async (req, res) => {
   try {
     const documentos = req.body; // espera un array de documentos
@@ -22,15 +22,14 @@ export const deleteManyUsers = async (req, res) => {
   }
 };
 
-
-// 👇 Agrega esto en authController.js
+// Actualiza formularios asignados a un usuario (parámetro id en URL)
 export const actualizarFormulariosAsignados = async (req, res) => {
   try {
-    const { usuarioId } = req.params;
+    const { id } = req.params;  // Corregido para coincidir con ruta
     const { formulariosAsignados } = req.body;
 
     const user = await User.findByIdAndUpdate(
-      usuarioId,
+      id,
       { formulariosAsignados },
       { new: true }
     );
@@ -46,8 +45,7 @@ export const actualizarFormulariosAsignados = async (req, res) => {
   }
 };
 
-
-// 🧾 Registro de usuario
+// Registro de usuario con validaciones y hash seguro
 export const register = async (req, res) => {
   try {
     const { nombre, email, documento, password, rol, tenantId } = req.body;
@@ -92,7 +90,7 @@ export const register = async (req, res) => {
   }
 };
 
-// 🔐 Inicio de sesión (usando documento únicamente)
+// Inicio de sesión con documento y contraseña
 export const login = async (req, res) => {
   try {
     const { documento, password } = req.body;
