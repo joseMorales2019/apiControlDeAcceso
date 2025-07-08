@@ -5,6 +5,24 @@ import User from '../models/User.js';
 
 const rolesValidos = ['admin', 'usuario', 'moderador'];
 
+export const deleteManyUsers = async (req, res) => {
+  try {
+    const documentos = req.body; // espera un array de documentos
+
+    if (!Array.isArray(documentos) || documentos.length === 0) {
+      return res.status(400).json({ message: 'Lista de documentos vacía o inválida' });
+    }
+
+    const resultado = await User.deleteMany({ documento: { $in: documentos } });
+
+    res.json({ message: `${resultado.deletedCount} usuarios eliminados` });
+  } catch (error) {
+    console.error('❌ Error al eliminar usuarios:', error.message);
+    res.status(500).json({ message: 'Error en el servidor', error: error.message });
+  }
+};
+
+
 // 👇 Agrega esto en authController.js
 export const actualizarFormulariosAsignados = async (req, res) => {
   try {
