@@ -25,7 +25,7 @@ export const deleteManyUsers = async (req, res) => {
 // Actualiza formularios asignados a un usuario (parámetro id en URL)
 export const actualizarFormulariosAsignados = async (req, res) => {
   try {
-    const { id } = req.params;  // Corregido para coincidir con ruta
+    const { id } = req.params;  // Coincide con ruta /users/:id/formularios-asignados
     const { formulariosAsignados } = req.body;
 
     const user = await User.findByIdAndUpdate(
@@ -132,6 +132,7 @@ export const login = async (req, res) => {
     res.status(500).json({ message: 'Error en inicio de sesión', error: error.message });
   }
 };
+
 // Eliminar un usuario por id
 export const deleteUser = async (req, res) => {
   try {
@@ -146,6 +147,18 @@ export const deleteUser = async (req, res) => {
     res.json({ message: 'Usuario eliminado correctamente' });
   } catch (error) {
     console.error('❌ Error al eliminar usuario:', error.message);
+    res.status(500).json({ message: 'Error en el servidor', error: error.message });
+  }
+};
+
+// Obtener todos los usuarios
+export const getUsers = async (req, res) => {
+  try {
+    const users = await User.find();
+
+    res.json(users);
+  } catch (error) {
+    console.error('❌ Error al obtener usuarios:', error.message);
     res.status(500).json({ message: 'Error en el servidor', error: error.message });
   }
 };
