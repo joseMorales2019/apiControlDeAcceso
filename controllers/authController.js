@@ -2,7 +2,32 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
 
+
 const rolesValidos = ['admin', 'usuario', 'moderador'];
+
+// 👇 Agrega esto en authController.js
+export const actualizarFormulariosAsignados = async (req, res) => {
+  try {
+    const { usuarioId } = req.params;
+    const { formulariosAsignados } = req.body;
+
+    const user = await User.findByIdAndUpdate(
+      usuarioId,
+      { formulariosAsignados },
+      { new: true }
+    );
+
+    if (!user) {
+      return res.status(404).json({ message: 'Usuario no encontrado' });
+    }
+
+    res.json({ message: 'Formularios asignados actualizados', user });
+  } catch (error) {
+    console.error('❌ Error al actualizar formularios asignados:', error.message);
+    res.status(500).json({ message: 'Error en el servidor', error: error.message });
+  }
+};
+
 
 // 🧾 Registro de usuario
 export const register = async (req, res) => {
