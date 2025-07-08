@@ -132,3 +132,20 @@ export const login = async (req, res) => {
     res.status(500).json({ message: 'Error en inicio de sesión', error: error.message });
   }
 };
+// Eliminar un usuario por id
+export const deleteUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const user = await User.findByIdAndDelete(id);
+
+    if (!user) {
+      return res.status(404).json({ message: 'Usuario no encontrado' });
+    }
+
+    res.json({ message: 'Usuario eliminado correctamente' });
+  } catch (error) {
+    console.error('❌ Error al eliminar usuario:', error.message);
+    res.status(500).json({ message: 'Error en el servidor', error: error.message });
+  }
+};
