@@ -1,3 +1,4 @@
+// routes/auth.routes.js
 import express from 'express';
 import {
   register,
@@ -9,11 +10,9 @@ import {
   deleteUser,
   deleteManyUsers,
   actualizarFormulariosAsignados,
-  guardarResultadoIA,              // ⬅️ NUEVO
-  listarResultadosIAMios,
-  guardarResultadoIA,          // 👈 añade
-  getResultadoIAById           // 👈 añade
-
+  guardarResultadoIA,
+  getResultadoIAById,
+  getResultadoIAPublic,     // ⬅️ NUEVO
 } from '../controllers/authController.js';
 
 import { importarUsuarios, upload } from '../controllers/excelController.js';
@@ -21,11 +20,12 @@ import { verifyToken, isAdmin } from '../middleware/auth.js';
 
 const router = express.Router();
 
-// Públicas
+/* ===== RUTAS PÚBLICAS (sin token) ===== */
 router.post('/register', register);
 router.post('/login', login);
+router.get('/public/resultados-ia/:id', getResultadoIAPublic); // ⬅️ público para enlaces/QR
 
-// Auth básico
+/* ===== RUTAS PROTEGIDAS ===== */
 router.get('/profile', verifyToken, profile);
 
 // Importar usuarios (admin)
@@ -41,11 +41,7 @@ router.delete('/users', verifyToken, isAdmin, deleteManyUsers);
 // Formularios asignados (admin)
 router.put('/users/:id/formularios-asignados', verifyToken, isAdmin, actualizarFormulariosAsignados);
 
-// ⬇️ NUEVOS ENDPOINTS PARA RESULTADOS DE IA (usuario autenticado)
-router.post('/resultados-ia', verifyToken, guardarResultadoIA);
-router.get('/resultados-ia/mios', verifyToken, listarResultadosIAMios);
-
-// 👇 NUEVOS endpoints para resultados IA
+// Resultados IA (privados)
 router.post('/resultados-ia', verifyToken, guardarResultadoIA);
 router.get('/resultados-ia/:id', verifyToken, getResultadoIAById);
 

@@ -2,27 +2,72 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import mongoose from 'mongoose';
 import User from '../models/User.js';
-import AnalisisIA from '../models/AnalisisIA.js'; // ⬅️ NUEVO MODELO
+import AnalisisIA from '../models/AnalisisIA.js';
 import ResultadoIA from '../models/ResultadoIA.js';
 
+/* ===========================================================
+ *                 RESULTADOS IA — PRIVADO
+ *  Requiere verifyToken (se configura en las rutas)
+ * =========================================================== */
 export const guardarResultadoIA = async (req, res) => {
   try {
-    const { datosGenerales, respuestas, resultado, meta } = req.body;
+    const { datosGenerales, respuestas, resultado, meta, usuario } = req.body;
 
+    const userId = req.user?.id;
+    const tenantId = req.user?.tenantId;
+
+    if (!userId || !tenantId) {
+      return res.status(401).json({ ok: false, message: 'Token inválido o incompleto' });
+    }
+
+    // Snapshot mínimo de usuario (si no viene desde el front)
+    let usuarioLoginSnapshot = usuario;
+    if (!usuarioLoginSnapshot) {
+      const u = await User.findOne({ _id: userId, tenantId }).select('nombre email documento rol');
+      usuarioLoginSnapshot = u ? {
+        id: u._id,
+        nombre: u.nombre,
+        email: u.email,
+        documento: u.documento,
+        rol: u.rol
+      } : {};
+    }
+
+    // Guarda en ResultadoIA (colección final)
     const item = await ResultadoIA.create({
-      userId: req.user.id,
-      tenantId: req.user.tenantId,
-      datosGenerales,
-      respuestas,
-      resultado,
-      meta,
+      userId,
+      tenantId,
+      datosGenerales: datosGenerales || {},
+      respuestas: Array.isArray(respuestas) ? respuestas : [],
+      resultado: resultado || {},
+      meta: {
+        ...meta,
+        origen: meta?.origen || 'BFQ-UI',
+        version: meta?.version || 1,
+        creadoEn: meta?.creadoEn || new Date()
+      }
     });
 
-    // devolvemos el ID para el QR
-    res.status(201).json({ ok: true, id: item._id.toString() });
+    // (Opcional/auditoría) Guarda también en AnalisisIA
+    await AnalisisIA.create({
+      tenantId,
+      userId,
+      usuarioLoginSnapshot,
+      datosGenerales: datosGenerales || {},
+      respuestas: Array.isArray(respuestas) ? respuestas : [],
+      resultado: resultado || {},
+      meta: {
+        ...meta,
+        origen: meta?.origen || 'BFQ-UI',
+        version: meta?.version || 1,
+        creadoEn: meta?.creadoEn || new Date()
+      }
+    });
+
+    return res.status(201).json({ ok: true, id: item._id.toString() });
   } catch (error) {
-    console.error('❌ Error guardarResultadoIA:', error.message);
-    res.status(500).json({ ok: false, message: 'Error al guardar resultado IA', error: error.message });
+    console.error('❌ Error guardarResultadoIA:', error);
+    return res.status(500).json({ ok: false, message: 'Error al guardar resultado IA', error: error.message });
   }
 };
 
@@ -33,19 +78,52 @@ export const getResultadoIAById = async (req, res) => {
     const item = await ResultadoIA.findOne({ _id: id, tenantId: req.user.tenantId });
     if (!item) return res.status(404).json({ ok: false, message: 'Resultado no encontrado' });
 
-    // Seguridad: el usuario debe ser dueño o admin
+    // Seguridad: dueño o admin
     if (req.user.rol !== 'admin' && item.userId.toString() !== req.user.id) {
       return res.status(403).json({ ok: false, message: 'Acceso denegado' });
     }
 
-    res.json({ ok: true, data: item });
+    return res.json({ ok: true, data: item });
   } catch (error) {
-    console.error('❌ Error getResultadoIAById:', error.message);
-    res.status(500).json({ ok: false, message: 'Error al obtener resultado IA', error: error.message });
+    console.error('❌ Error getResultadoIAById:', error);
+    return res.status(500).json({ ok: false, message: 'Error al obtener resultado IA', error: error.message });
   }
 };
 
-// Registro
+/* ===========================================================
+ *               RESULTADOS IA — PÚBLICO (sin token)
+ *  Para enlaces/QR compartidos: devuelve datos sanitizados.
+ * =========================================================== */
+export const getResultadoIAPublic = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const item = await ResultadoIA.findById(id).lean();
+    if (!item) return res.status(404).json({ ok: false, message: 'Resultado no encontrado' });
+
+    // Sanitizar: no exponer userId ni tenantId
+    const { _id, datosGenerales, resultado, createdAt, updatedAt } = item;
+
+    return res.json({
+      ok: true,
+      data: {
+        id: _id,
+        datosGenerales: datosGenerales || {},
+        resultado: resultado || {},
+        createdAt,
+        updatedAt
+      }
+    });
+  } catch (error) {
+    console.error('❌ Error getResultadoIAPublic:', error);
+    // Responder SIEMPRE JSON para evitar "Unexpected token '<'"
+    return res.status(500).json({ ok: false, message: 'Error al obtener resultado público', error: error.message });
+  }
+};
+
+/* ===========================================================
+ *                     AUTH BÁSICO
+ * =========================================================== */
 export const register = async (req, res) => {
   try {
     const { nombre, email, documento, password, rol, tenantId } = req.body;
@@ -69,14 +147,13 @@ export const register = async (req, res) => {
       { expiresIn: process.env.JWT_EXPIRES_IN }
     );
 
-    res.status(201).json({ token });
+    return res.status(201).json({ token, user: { id: nuevo._id, nombre, email, documento, rol, tenantId } });
   } catch (error) {
-    console.error('❌ Error en register:', error.message);
-    res.status(500).json({ message: 'Error al registrar usuario', error: error.message });
+    console.error('❌ Error en register:', error);
+    return res.status(500).json({ message: 'Error al registrar usuario', error: error.message });
   }
 };
 
-// Login
 export const login = async (req, res) => {
   try {
     const { documento, password } = req.body;
@@ -97,7 +174,7 @@ export const login = async (req, res) => {
       { expiresIn: process.env.JWT_EXPIRES_IN }
     );
 
-    res.json({
+    return res.json({
       token,
       user: {
         id: user._id,
@@ -109,42 +186,41 @@ export const login = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('❌ Error en login:', error.message);
-    res.status(500).json({ message: 'Error en inicio de sesión', error: error.message });
+    console.error('❌ Error en login:', error);
+    return res.status(500).json({ message: 'Error en inicio de sesión', error: error.message });
   }
 };
 
-// Perfil
 export const profile = async (req, res) => {
   try {
     const user = await User.findOne({ _id: req.user.id, tenantId: req.user.tenantId }).select('-password');
     if (!user) return res.status(404).json({ message: 'Usuario no encontrado' });
-    res.json(user);
+    return res.json(user);
   } catch (error) {
-    console.error('❌ Error en profile:', error.message);
-    res.status(500).json({ message: 'Error al obtener el perfil', error: error.message });
+    console.error('❌ Error en profile:', error);
+    return res.status(500).json({ message: 'Error al obtener el perfil', error: error.message });
   }
 };
 
-// Admin: listar usuarios
+/* ===========================================================
+ *                     ADMIN USUARIOS
+ * =========================================================== */
 export const getUsers = async (req, res) => {
   try {
     if (req.user.rol !== 'admin') {
       return res.status(403).json({ message: 'Acceso denegado: solo administradores pueden visualizar usuarios' });
     }
-
     const filters = { tenantId: req.user.tenantId };
     if (req.query.email) filters.email = req.query.email;
 
     const users = await User.find(filters).select('-password');
-    res.json(users);
+    return res.json(users);
   } catch (error) {
-    console.error('❌ Error al obtener usuarios:', error.message);
-    res.status(500).json({ message: 'Error al obtener usuarios', error: error.message });
+    console.error('❌ Error al obtener usuarios:', error);
+    return res.status(500).json({ message: 'Error al obtener usuarios', error: error.message });
   }
 };
 
-// Admin: actualizar un usuario
 export const updateUser = async (req, res) => {
   try {
     if (req.user.rol !== 'admin') {
@@ -152,7 +228,7 @@ export const updateUser = async (req, res) => {
     }
 
     const { id } = req.params;
-    const datosActualizados = req.body;
+    const datosActualizados = { ...req.body };
 
     if (datosActualizados.password) {
       datosActualizados.password = await bcrypt.hash(datosActualizados.password, 10);
@@ -165,47 +241,41 @@ export const updateUser = async (req, res) => {
     ).select('-password');
 
     if (!user) return res.status(404).json({ message: 'Usuario no encontrado' });
-    res.json(user);
+    return res.json(user);
   } catch (error) {
-    console.error('❌ Error al actualizar usuario:', error.message);
-    res.status(500).json({ message: 'Error al actualizar usuario', error: error.message });
+    console.error('❌ Error al actualizar usuario:', error);
+    return res.status(500).json({ message: 'Error al actualizar usuario', error: error.message });
   }
 };
 
-// Admin: actualizar múltiples
 export const updateManyUsers = async (req, res) => {
   try {
     if (req.user.rol !== 'admin') {
       return res.status(403).json({ message: 'Acceso denegado: solo administradores pueden actualizar múltiples usuarios' });
     }
 
-    const updates = req.body;
+    const updates = req.body || [];
 
-    const updatePromises = updates.map(async (item) => {
+    const results = await Promise.all(updates.map(async (item) => {
       const { id, ...data } = item;
-
       if (data.password) {
         data.password = await bcrypt.hash(data.password, 10);
       }
-
       return User.findOneAndUpdate(
         { _id: id, tenantId: req.user.tenantId },
         data,
         { new: true }
       ).select('-password');
-    });
+    }));
 
-    const results = await Promise.all(updatePromises);
     const updatedUsers = results.filter(Boolean);
-
-    res.json({ updated: updatedUsers.length, users: updatedUsers });
+    return res.json({ updated: updatedUsers.length, users: updatedUsers });
   } catch (error) {
-    console.error('❌ Error en actualización múltiple:', error.message);
-    res.status(500).json({ message: 'Error al actualizar múltiples usuarios', error: error.message });
+    console.error('❌ Error en actualización múltiple:', error);
+    return res.status(500).json({ message: 'Error al actualizar múltiples usuarios', error: error.message });
   }
 };
 
-// Admin: eliminar usuario
 export const deleteUser = async (req, res) => {
   try {
     if (req.user.rol !== 'admin') {
@@ -216,31 +286,35 @@ export const deleteUser = async (req, res) => {
     const eliminado = await User.findOneAndDelete({ _id: id, tenantId: req.user.tenantId });
     if (!eliminado) return res.status(404).json({ message: 'Usuario no encontrado' });
 
-    res.json({ message: 'Usuario eliminado correctamente', id });
+    return res.json({ message: 'Usuario eliminado correctamente', id });
   } catch (error) {
-    console.error('❌ Error al eliminar usuario:', error.message);
-    res.status(500).json({ message: 'Error al eliminar usuario', error: error.message });
+    console.error('❌ Error al eliminar usuario:', error);
+    return res.status(500).json({ message: 'Error al eliminar usuario', error: error.message });
   }
 };
 
-// Admin: eliminar múltiples
 export const deleteManyUsers = async (req, res) => {
   try {
     if (req.user.rol !== 'admin') {
       return res.status(403).json({ message: 'Acceso denegado: solo administradores pueden eliminar múltiples usuarios' });
     }
 
-    const { ids } = req.body;
-    const resultado = await User.deleteMany({ _id: { $in: ids }, tenantId: req.user.tenantId });
+    const { ids } = req.body || {};
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({ message: 'Debe proporcionar un arreglo de ids' });
+    }
 
-    res.json({ message: 'Usuarios eliminados correctamente', eliminados: resultado.deletedCount });
+    const resultado = await User.deleteMany({ _id: { $in: ids }, tenantId: req.user.tenantId });
+    return res.json({ message: 'Usuarios eliminados correctamente', eliminados: resultado.deletedCount });
   } catch (error) {
-    console.error('❌ Error al eliminar múltiples usuarios:', error.message);
-    res.status(500).json({ message: 'Error al eliminar usuarios', error: error.message });
+    console.error('❌ Error al eliminar múltiples usuarios:', error);
+    return res.status(500).json({ message: 'Error al eliminar usuarios', error: error.message });
   }
 };
 
-// Admin: actualizar formularios asignados
+/* ===========================================================
+ *            Formularios asignados (ADMIN)
+ * =========================================================== */
 export const actualizarFormulariosAsignados = async (req, res) => {
   try {
     if (req.user.rol !== 'admin') {
@@ -258,76 +332,28 @@ export const actualizarFormulariosAsignados = async (req, res) => {
 
     if (!usuario) return res.status(404).json({ mensaje: 'Usuario no encontrado' });
 
-    res.json({
+    return res.json({
       mensaje: 'Formularios asignados actualizados con éxito',
       usuario
     });
   } catch (err) {
-    console.error('❌ Error al actualizar formularios asignados:', err.message);
-    res.status(500).json({ mensaje: 'Error al actualizar formularios asignados' });
+    console.error('❌ Error al actualizar formularios asignados:', err);
+    return res.status(500).json({ mensaje: 'Error al actualizar formularios asignados' });
   }
 };
 
-/* ===================== NUEVO: Guardar Resultados IA ===================== */
-export const guardarResultadoIA = async (req, res) => {
-  try {
-    // Todo viene del body; la identidad real del usuario/tenant viene del token
-    const { usuario, datosGenerales, respuestas, resultado, meta } = req.body;
-
-    const userId = req.user.id;
-    const tenantId = req.user.tenantId;
-
-    if (!userId || !tenantId) {
-      return res.status(401).json({ message: 'Token inválido o incompleto' });
-    }
-
-    // Snapshot mínimo del usuario (si no viene en body)
-    let usuarioLoginSnapshot = usuario;
-    if (!usuarioLoginSnapshot) {
-      const u = await User.findOne({ _id: userId, tenantId }).select('nombre email documento rol');
-      usuarioLoginSnapshot = u ? {
-        id: u._id,
-        nombre: u.nombre,
-        email: u.email,
-        documento: u.documento,
-        rol: u.rol
-      } : {};
-    }
-
-    const doc = await AnalisisIA.create({
-      tenantId,
-      userId,
-      usuarioLoginSnapshot,
-      datosGenerales: datosGenerales || {},
-      respuestas: Array.isArray(respuestas) ? respuestas : [],
-      resultado: resultado || {},
-      meta: {
-        ...meta,
-        origen: meta?.origen || 'BFQ-UI',
-        version: meta?.version || 1
-      }
-    });
-
-    res.status(201).json({
-      message: '✅ Resultado de IA guardado correctamente',
-      id: doc._id
-    });
-  } catch (error) {
-    console.error('❌ Error al guardar resultado IA:', error);
-    res.status(500).json({ message: 'Error al guardar resultado IA', error: error.message });
-  }
-};
-
-// (Opcional) Listar resultados del usuario actual
+/* ===========================================================
+ *    (Opcional) Listar resultados IA del usuario actual
+ * =========================================================== */
 export const listarResultadosIAMios = async (req, res) => {
   try {
     const userId = req.user.id;
     const tenantId = req.user.tenantId;
 
     const docs = await AnalisisIA.find({ userId, tenantId }).sort({ createdAt: -1 });
-    res.json(docs);
+    return res.json(docs);
   } catch (error) {
     console.error('❌ Error al listar resultados IA:', error);
-    res.status(500).json({ message: 'Error al listar resultados IA' });
+    return res.status(500).json({ message: 'Error al listar resultados IA' });
   }
 };

@@ -1,12 +1,10 @@
+// models/AnalisisIA.js
 import mongoose from 'mongoose';
-
 const { Schema } = mongoose;
 
 const AnalisisIASchema = new Schema({
   tenantId: { type: Schema.Types.ObjectId, required: true, index: true },
   userId:   { type: Schema.Types.ObjectId, required: true, ref: 'User', index: true },
-
-  // Snapshot del usuario logueado al momento de guardar (no sensible)
   usuarioLoginSnapshot: {
     id: { type: Schema.Types.ObjectId },
     nombre: String,
@@ -14,12 +12,9 @@ const AnalisisIASchema = new Schema({
     documento: String,
     rol: String
   },
-
-  // Datos del test
-  datosGenerales: Schema.Types.Mixed,   // { fechaPrueba, edad, sexo, testAplicado, escalaNormativa }
-  respuestas:    [Schema.Types.Mixed],  // array de respuestas BFQ
-  resultado:     Schema.Types.Mixed,    // objeto normalizado devuelto por IA
-
+  datosGenerales: Schema.Types.Mixed,
+  respuestas:    [Schema.Types.Mixed],
+  resultado:     Schema.Types.Mixed,
   meta: {
     origen:   { type: String, default: 'BFQ-UI' },
     version:  { type: Number, default: 1 },
