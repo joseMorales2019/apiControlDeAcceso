@@ -3,10 +3,6 @@ import Tenant from '../models/tenant.model.js';
 
 const router = express.Router();
 
-
-
-
-
 // GET ALL
 router.get('/', async (req, res) => {
   try {

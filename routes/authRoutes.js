@@ -8,7 +8,9 @@ import {
   updateManyUsers,
   deleteUser,
   deleteManyUsers,
-  actualizarFormulariosAsignados
+  actualizarFormulariosAsignados,
+  guardarResultadoIA,              // ⬅️ NUEVO
+  listarResultadosIAMios           // ⬅️ OPCIONAL GET para el usuario actual
 } from '../controllers/authController.js';
 
 import { importarUsuarios, upload } from '../controllers/excelController.js';
@@ -16,24 +18,28 @@ import { verifyToken, isAdmin } from '../middleware/auth.js';
 
 const router = express.Router();
 
-// Rutas públicas (register y login esperan tenantId en body)
+// Públicas
 router.post('/register', register);
 router.post('/login', login);
 
-// Ruta protegida para usuario autenticado
+// Auth básico
 router.get('/profile', verifyToken, profile);
 
-// Importar usuarios (solo admin)
+// Importar usuarios (admin)
 router.post('/importar-usuarios', verifyToken, isAdmin, upload.single('file'), importarUsuarios);
 
-// Rutas admin
+// Admin users
 router.get('/users', verifyToken, isAdmin, getUsers);
 router.put('/users/:id', verifyToken, isAdmin, updateUser);
 router.put('/users', verifyToken, isAdmin, updateManyUsers);
 router.delete('/users/:id', verifyToken, isAdmin, deleteUser);
 router.delete('/users', verifyToken, isAdmin, deleteManyUsers);
 
-// Actualizar formularios asignados
+// Formularios asignados (admin)
 router.put('/users/:id/formularios-asignados', verifyToken, isAdmin, actualizarFormulariosAsignados);
+
+// ⬇️ NUEVOS ENDPOINTS PARA RESULTADOS DE IA (usuario autenticado)
+router.post('/resultados-ia', verifyToken, guardarResultadoIA);
+router.get('/resultados-ia/mios', verifyToken, listarResultadosIAMios);
 
 export default router;

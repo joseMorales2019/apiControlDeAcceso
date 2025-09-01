@@ -8,7 +8,7 @@ export const upload = multer({ storage });
 
 export const importarUsuarios = async (req, res) => {
   try {
-    const tenantId = req.user.tenantId; // Forzar tenantId del usuario autenticado
+    const tenantId = req.user.tenantId;
     if (!tenantId) {
       return res.status(400).json({ message: 'tenantId no encontrado en token' });
     }
@@ -31,7 +31,6 @@ export const importarUsuarios = async (req, res) => {
           throw new Error(`Fila ${i + 2}: 'email' y 'documento' son obligatorios`);
         }
 
-        // Buscar usuario solo en tenant actual
         const existingUser = await User.findOne({ documento, tenantId });
 
         if (eliminar === true || eliminar === 'true') {
@@ -42,18 +41,15 @@ export const importarUsuarios = async (req, res) => {
           continue;
         }
 
-        // Validar duplicados explícitamente (email y documento)
         const emailConflict = await User.findOne({ email, tenantId, documento: { $ne: documento } });
         if (emailConflict) throw new Error(`Fila ${i + 2}: Email ya registrado en otro usuario`);
 
         let hashedPassword = existingUser?.password;
-
         if (!existingUser || (password && !(await bcrypt.compare(password, existingUser.password)))) {
           hashedPassword = await bcrypt.hash(password || '12345678', 10);
         }
 
         if (existingUser) {
-          // Actualizar usuario
           await User.updateOne(
             { documento, tenantId },
             {
@@ -61,12 +57,11 @@ export const importarUsuarios = async (req, res) => {
               email: email || existingUser.email,
               password: hashedPassword,
               rol: rol || existingUser.rol,
-              tenantId // asegurar que no se cambie tenant
+              tenantId
             }
           );
           updated++;
         } else {
-          // Crear usuario nuevo
           await User.create({
             nombre,
             email,

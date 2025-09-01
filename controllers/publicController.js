@@ -1,8 +1,7 @@
 import mongoose from 'mongoose';
 import User from '../models/User.js';
-import bcrypt from 'bcrypt'; // ✅ <--- ¡Esta es la clave!
+import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
-
 
 export const crearTenantYAdmin = async (req, res) => {
   try {
@@ -12,10 +11,8 @@ export const crearTenantYAdmin = async (req, res) => {
       return res.status(400).json({ message: 'Campos obligatorios faltantes' });
     }
 
-    // ✅ Generar nuevo tenantId (ObjectId válido)
     const tenantId = new mongoose.Types.ObjectId();
 
-    // Verificar si ya existe un admin con ese correo en todo el sistema
     const existeAdmin = await User.findOne({ email, documento });
     if (existeAdmin) {
       return res.status(400).json({ message: 'Ya existe un usuario con este correo o documento' });
@@ -41,7 +38,7 @@ export const crearTenantYAdmin = async (req, res) => {
     res.status(201).json({
       mensaje: '✅ Tenant y primer admin creados con éxito',
       token,
-      tenantId: tenantId.toString() // para que el frontend lo guarde
+      tenantId: tenantId.toString()
     });
 
   } catch (error) {
