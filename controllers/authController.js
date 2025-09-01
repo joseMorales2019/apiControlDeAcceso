@@ -3,6 +3,47 @@ import jwt from 'jsonwebtoken';
 import mongoose from 'mongoose';
 import User from '../models/User.js';
 import AnalisisIA from '../models/AnalisisIA.js'; // ⬅️ NUEVO MODELO
+import ResultadoIA from '../models/ResultadoIA.js';
+
+export const guardarResultadoIA = async (req, res) => {
+  try {
+    const { datosGenerales, respuestas, resultado, meta } = req.body;
+
+    const item = await ResultadoIA.create({
+      userId: req.user.id,
+      tenantId: req.user.tenantId,
+      datosGenerales,
+      respuestas,
+      resultado,
+      meta,
+    });
+
+    // devolvemos el ID para el QR
+    res.status(201).json({ ok: true, id: item._id.toString() });
+  } catch (error) {
+    console.error('❌ Error guardarResultadoIA:', error.message);
+    res.status(500).json({ ok: false, message: 'Error al guardar resultado IA', error: error.message });
+  }
+};
+
+export const getResultadoIAById = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const item = await ResultadoIA.findOne({ _id: id, tenantId: req.user.tenantId });
+    if (!item) return res.status(404).json({ ok: false, message: 'Resultado no encontrado' });
+
+    // Seguridad: el usuario debe ser dueño o admin
+    if (req.user.rol !== 'admin' && item.userId.toString() !== req.user.id) {
+      return res.status(403).json({ ok: false, message: 'Acceso denegado' });
+    }
+
+    res.json({ ok: true, data: item });
+  } catch (error) {
+    console.error('❌ Error getResultadoIAById:', error.message);
+    res.status(500).json({ ok: false, message: 'Error al obtener resultado IA', error: error.message });
+  }
+};
 
 // Registro
 export const register = async (req, res) => {

@@ -10,7 +10,10 @@ import {
   deleteManyUsers,
   actualizarFormulariosAsignados,
   guardarResultadoIA,              // ⬅️ NUEVO
-  listarResultadosIAMios           // ⬅️ OPCIONAL GET para el usuario actual
+  listarResultadosIAMios,
+  guardarResultadoIA,          // 👈 añade
+  getResultadoIAById           // 👈 añade
+
 } from '../controllers/authController.js';
 
 import { importarUsuarios, upload } from '../controllers/excelController.js';
@@ -41,5 +44,9 @@ router.put('/users/:id/formularios-asignados', verifyToken, isAdmin, actualizarF
 // ⬇️ NUEVOS ENDPOINTS PARA RESULTADOS DE IA (usuario autenticado)
 router.post('/resultados-ia', verifyToken, guardarResultadoIA);
 router.get('/resultados-ia/mios', verifyToken, listarResultadosIAMios);
+
+// 👇 NUEVOS endpoints para resultados IA
+router.post('/resultados-ia', verifyToken, guardarResultadoIA);
+router.get('/resultados-ia/:id', verifyToken, getResultadoIAById);
 
 export default router;
